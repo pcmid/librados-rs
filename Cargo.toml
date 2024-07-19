@@ -1,0 +1,9 @@
+[package]
+name = "librados-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+librados-sys = { path = "librados-sys" }
+futures = "0.3.30"
+lazy_static = "1.5.0"

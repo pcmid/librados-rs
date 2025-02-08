@@ -5,7 +5,7 @@ use std::os::raw::c_char;
 use librados_sys::*;
 
 use crate::buffer::MAX_BUF_SIZE;
-use crate::errors::{check_error, Error, OVERFLOW_ERROR};
+use crate::errors::{check_error, Error, ERROR_RANGE};
 use crate::io::{AioCompletion, IoCtx};
 use crate::rados::Rados;
 use crate::xattr::{RadosXattrsIter, Xattrs};
@@ -33,8 +33,8 @@ impl<'a> Object<'a> {
     pub async fn stat(&self) -> Result<Stat, Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
         let comp = AioCompletion::new()?;
-        let key = std::ffi::CString::new(self.name()).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let key = std::ffi::CString::new(self.name())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         let mut psize = Box::new(0u64);
         let mut pmtime = Box::new(timespec {
@@ -68,8 +68,8 @@ impl<'a> Object<'a> {
 
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
         let comp = AioCompletion::new()?;
-        let key = std::ffi::CString::new(self.name()).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let key = std::ffi::CString::new(self.name())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         let code = unsafe {
             rados_aio_read(
@@ -90,8 +90,8 @@ impl<'a> Object<'a> {
     pub async fn write(&self, pos: u64, buf: &[u8]) -> Result<usize, Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
         let comp = AioCompletion::new()?;
-        let key = std::ffi::CString::new(self.name()).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let key = std::ffi::CString::new(self.name())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         let code = unsafe {
             rados_aio_write(
@@ -111,8 +111,8 @@ impl<'a> Object<'a> {
 
     pub async fn write_full(&self, data: &[u8]) -> Result<usize, Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
-        let comp = AioCompletion::new().unwrap();
-        let key = std::ffi::CString::new(self.name()).unwrap();
+        let comp = AioCompletion::new()?;
+        let key = std::ffi::CString::new(self.name())?;
 
         let code = unsafe {
             rados_aio_write_full(
@@ -132,8 +132,8 @@ impl<'a> Object<'a> {
 
     pub async fn append(&self, data: &[u8]) -> Result<usize, Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
-        let comp = AioCompletion::new().unwrap();
-        let key = std::ffi::CString::new(self.name()).unwrap();
+        let comp = AioCompletion::new()?;
+        let key = std::ffi::CString::new(self.name())?;
 
         let code = unsafe {
             rados_aio_append(
@@ -152,10 +152,10 @@ impl<'a> Object<'a> {
 
     pub async fn get_xattr(&self, name: &str) -> Result<Vec<u8>, Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
-        let key = std::ffi::CString::new(self.name()).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-        let name = std::ffi::CString::new(name).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let key = std::ffi::CString::new(self.name())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let name = std::ffi::CString::new(name)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
         let mut buf = Vec::with_capacity(64);
 
         loop {
@@ -178,22 +178,22 @@ impl<'a> Object<'a> {
                     break;
                 }
                 Err(e) => {
-                    if e == *OVERFLOW_ERROR && buf.capacity() < MAX_BUF_SIZE {
+                    if e == *ERROR_RANGE && buf.capacity() < MAX_BUF_SIZE {
                         buf.reserve(buf.capacity() * 2);
                     } else {
                         return Err(e.into());
                     }
                 }
             }
-        };
+        }
 
         Ok(buf)
     }
 
     pub async fn get_xattrs(&self) -> Result<Xattrs, Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
-        let key = std::ffi::CString::new(self.name()).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let key = std::ffi::CString::new(self.name())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         let comp = AioCompletion::new()?;
         let mut iter = RadosXattrsIter::new(std::ptr::null_mut());
@@ -217,10 +217,10 @@ impl<'a> Object<'a> {
 
     pub async fn set_xattr(&self, name: &str, value: &[u8]) -> Result<(), Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
-        let key = std::ffi::CString::new(self.name()).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-        let name = std::ffi::CString::new(name).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let key = std::ffi::CString::new(self.name())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let name = std::ffi::CString::new(name)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
         let comp = AioCompletion::new()?;
 
         let code = unsafe {
@@ -243,16 +243,10 @@ impl<'a> Object<'a> {
 
     pub fn truncate(&self, size: u64) -> Result<(), Error> {
         let io_ctx = IoCtx::new(self.rados, self.pool_name.clone())?;
-        let key = std::ffi::CString::new(self.name()).
-            map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let key = std::ffi::CString::new(self.name())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-        let code = unsafe {
-            rados_trunc(
-                io_ctx.ptr,
-                key.as_ptr() as *mut c_char,
-                size,
-            )
-        };
+        let code = unsafe { rados_trunc(io_ctx.ptr, key.as_ptr() as *mut c_char, size) };
 
         assert!(code <= 0);
         check_error(code)
@@ -267,4 +261,3 @@ pub struct Stat {
 
 #[cfg(test)]
 mod tests {}
-

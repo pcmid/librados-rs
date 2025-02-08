@@ -2,8 +2,8 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::mem::transmute;
 use std::pin::Pin;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicPtr, Ordering};
+use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 
 use librados_sys::*;
@@ -22,9 +22,7 @@ impl<'a> IoCtx<'a> {
         let mut ptr = std::ptr::null_mut();
         let pool_name = std::ffi::CString::new(pool_name)?;
 
-        let code = unsafe {
-            rados_ioctx_create(rados.ptr, pool_name.as_ptr(), &mut ptr)
-        };
+        let code = unsafe { rados_ioctx_create(rados.ptr, pool_name.as_ptr(), &mut ptr) };
         check_error(code)?;
 
         Ok(IoCtx {
@@ -78,27 +76,18 @@ impl AioCompletion {
     }
 
     pub(crate) fn is_complete(&self) -> bool {
-        unsafe {
-            rados_aio_is_complete(self.ptr) != 0
-        }
+        unsafe { rados_aio_is_complete(self.ptr) != 0 }
     }
 
     pub(crate) fn get_return_value(&self) -> Result<usize, Error> {
-        let ret = unsafe {
-            rados_aio_get_return_value(self.ptr)
-        };
-
-        if ret < 0 {
-            check_error(ret)?;
-        }
+        let ret = unsafe { rados_aio_get_return_value(self.ptr) };
+        check_error(ret)?;
         Ok(ret as usize)
     }
 
     #[allow(dead_code)]
     pub(crate) fn wait_for_complete(&self) -> Result<usize, Error> {
-        let ret = unsafe {
-            rados_aio_get_return_value(self.ptr)
-        };
+        let ret = unsafe { rados_aio_get_return_value(self.ptr) };
         if ret < 0 {
             check_error(ret)?;
         }
@@ -107,9 +96,7 @@ impl AioCompletion {
 
     #[allow(dead_code)]
     pub(crate) fn is_complete_and_cb(&self) -> bool {
-        unsafe {
-            rados_aio_is_complete_and_cb(self.ptr) != 0
-        }
+        unsafe { rados_aio_is_complete_and_cb(self.ptr) != 0 }
     }
 
     #[allow(dead_code)]
@@ -121,9 +108,7 @@ impl AioCompletion {
             rados_aio_get_return_value(self.ptr)
         };
 
-        if ret < 0 {
-            check_error(ret)?;
-        }
+        check_error(ret)?;
         Ok(ret as usize)
     }
 }
@@ -154,8 +139,10 @@ impl Future for AioCompletion {
     }
 }
 
-
-unsafe extern "C" fn aio_callback(_completion: rados_completion_t, _arg: *mut std::os::raw::c_void) {
+unsafe extern "C" fn aio_callback(
+    _completion: rados_completion_t,
+    _arg: *mut std::os::raw::c_void,
+) {
     let waker: Arc<Box<AtomicPtr<Waker>>> = transmute(_arg);
     let waker = waker.swap(std::ptr::null_mut(), Ordering::SeqCst);
     if !waker.is_null() {

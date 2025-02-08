@@ -24,10 +24,7 @@ impl Cluster {
     pub fn pool_lookup(&self, pool_name: &str) -> Result<Pool, Error> {
         let name = CString::new(pool_name)?;
         let id = unsafe { rados_pool_lookup(self.rados.ptr, name.as_ptr()) };
-        if id < 0 {
-            check_error(id as c_int)?;
-        }
-
+        check_error(id as c_int)?;
         Ok(Pool::new(&self.rados, pool_name))
     }
 
@@ -63,7 +60,6 @@ impl Cluster {
                 check_error(len)?;
             }
 
-
             if len > pool_buffer.capacity() as i32 {
                 pool_buffer.reserve(len as usize);
                 let len = rados_pool_list(
@@ -71,11 +67,7 @@ impl Cluster {
                     pool_buffer.as_mut_ptr() as *mut c_char,
                     pool_buffer.capacity(),
                 );
-
-                if len < 0 {
-                    check_error(len as i32)?;
-                }
-
+                check_error(len as i32)?;
                 pool_buffer.set_len(len as usize);
             } else {
                 pool_buffer.set_len(len as usize);

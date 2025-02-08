@@ -8,6 +8,7 @@ use librados_sys::{rados_getxattrs_end, rados_getxattrs_next, rados_xattrs_iter_
 
 use crate::errors::{check_error, Error};
 
+#[derive(Debug)]
 pub struct Xattrs(HashMap<String, Vec<u8>>);
 
 pub(crate) struct RadosXattrsIter {
@@ -16,9 +17,7 @@ pub(crate) struct RadosXattrsIter {
 
 impl RadosXattrsIter {
     pub(crate) fn new(ptr: rados_xattrs_iter_t) -> Self {
-        Self {
-            ptr,
-        }
+        Self { ptr }
     }
 }
 
@@ -42,14 +41,8 @@ impl Xattrs {
             let mut data_ptr: *const c_char = std::ptr::null_mut();
             let mut len = 0;
 
-            let code = unsafe {
-                rados_getxattrs_next(
-                    value.ptr,
-                    &mut name_ptr,
-                    &mut data_ptr,
-                    &mut len,
-                )
-            };
+            let code =
+                unsafe { rados_getxattrs_next(value.ptr, &mut name_ptr, &mut data_ptr, &mut len) };
             assert!(code <= 0);
             check_error(code)?;
 
